@@ -142,6 +142,20 @@ uv run pyinstaller voxtype.spec --noconfirm
 - `NSMicrophoneUsageDescription` —— **沒有這行 macOS 會直接不給麥克風**
 - `hiddenimports` —— `pystray` 與 `keyring` 的後端是動態載入的，不寫會在執行期才炸
 
+### 自己在本機打包時要簽章
+
+憑證在 `~/.voxtype-signing/voxtype-signing.p12`，密碼存在 Keychain（service `voxtype-signing`）：
+
+```bash
+KC=~/Library/Keychains/login.keychain-db
+security import ~/.voxtype-signing/voxtype-signing.p12 -k $KC \
+  -P "$(security find-generic-password -s voxtype-signing -a p12 -w)" -T /usr/bin/codesign   # 只需做一次
+codesign --force --deep --sign "VoxType Self Signed" dist/VoxType.app
+codesign -d -r- dist/VoxType.app        # 確認 certificate root 的雜湊沒變
+```
+
+不簽也能跑，只是會退回 ad-hoc，系統權限就會跟舊版一樣每次重來。
+
 ## 發佈到 GitHub Release
 
 `.github/workflows/release.yml` 已經備好：推一個 tag 就自動在 macOS 與 Windows runner 上各打一包，
@@ -153,6 +167,13 @@ git tag v0.1.0 && git push origin v0.1.0
 
 macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）。
 
+簽章需要兩個 repo secret，缺了就自動跳過簽章（fork 的 PR 也能建置）：
+
+| Secret | 內容 |
+|---|---|
+| `MACOS_CERT_P12` | `base64 -i voxtype-signing.p12` 的輸出 |
+| `MACOS_CERT_PASSWORD` | p12 的密碼 |
+
 ## 給下載的人：第一次打開
 
 兩邊都是**沒有付費簽章**的程式，系統會擋一次：
@@ -160,18 +181,24 @@ macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）
 - **macOS**：右鍵 →「打開」→「打開」，或 `xattr -dr com.apple.quarantine /Applications/VoxType.app`
 - **Windows**：SmartScreen →「其他資訊」→「仍要執行」
 
-ad-hoc 簽章還有一個持續性的代價：**每次發新版，「輔助使用」與 Keychain 授權都要重給一次**
-（macOS 依簽章辨識 app，簽章變了就是另一個 app）。用一張固定的簽章身分就能免掉，
-免費的自簽憑證也可以做到（憑證放 CI secret），付費的 Developer ID 則連 Gatekeeper 一起解決：
+**v0.1.4 起改用固定的自簽憑證簽章**，所以「輔助使用」與 Keychain 授權**只要給一次，之後更新都不會失效**
+（macOS 依 designated requirement 辨識 app，綁憑證之後每版都一樣）。Gatekeeper 仍然會擋，
+因為自簽憑證不等於公證；要連這個一起免掉就得走付費路線：
 
 - macOS：Apple Developer Program（US$99/年）→ `codesign --sign "Developer ID Application: ..."` → `xcrun notarytool submit`
 - Windows：買一張程式碼簽章憑證（OV 一年約 US$200 起，EV 才能立刻免除 SmartScreen）
 
 ## 打包版的兩個 macOS 注意事項
 
-1. **權限是綁在簽章上的。** PyInstaller 預設用 ad-hoc 簽章，每次重新打包簽章都會變，
-   所以「輔助使用」要重新勾選、Keychain 會再問一次「VoxType 想使用您鑰匙圈中儲存的機密資訊」
-   （按「永遠允許」）。用固定的 Developer ID 簽章就不會每次重來。
+1. **權限是綁在簽章上的。** CI 用一張固定的自簽憑證簽章（憑證存在 GitHub secret），
+   因此 designated requirement 每版都相同，授權給過一次就一直有效：
+
+   ```
+   designated => identifier "com.jsyeh.voxtype" and certificate root = H"9889d670…"
+   ```
+
+   PyInstaller 預設的 ad-hoc 簽章則是綁 cdhash，每次打包都不一樣，那才是 v0.1.3 以前
+   每次更新都要重新授權的原因。
 2. 打包後 `sys.executable` 就是 VoxType 自己，不是 python，所以設定視窗改用
    `VoxType --settings` 開子行程（`tray.py:46`）；跑原始碼時仍走 `python -m voxtype.ui`。
 
@@ -201,9 +228,9 @@ CPython、打包時直接 `import tkinter` 驗證、產物再檢查一次 `_tkin
 v0.1.2 起 VoxType 啟動時會自己檢查，沒權限就跳通知並直接開啟設定頁，你勾選後它會自動恢復，
 不必重開程式；menu bar 選單也多了一項「輔助使用權限…」可隨時叫出來。
 
-**陷阱：清單裡的 VoxType 開關是開的，但權限其實是無效的** —— ad-hoc 簽章每次改版都會變，
-macOS 會把新版當成另一個 app，於是「輔助使用」清單裡那個亮著的開關對新版**完全不算數**。
-這也是 v0.1.1 快捷鍵失效的原因。解法：
+**陷阱：清單裡的 VoxType 開關是開的，但權限其實是無效的** —— 這是 v0.1.3 以前的老問題
+（ad-hoc 簽章每次改版都變，macOS 把新版當成另一個 app，於是那個亮著的開關對新版完全不算數）。
+**v0.1.4 起改用固定憑證已經根治**，但從舊版升上來的這一次仍需要重給一次：
 
 ```bash
 tccutil reset Accessibility com.jsyeh.voxtype

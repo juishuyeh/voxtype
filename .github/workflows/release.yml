@@ -20,6 +20,10 @@ jobs:
       # runner 上的 Homebrew python@3.14 不含 tkinter，會打出「點設定沒反應」的包，
       # 所以強制用 uv 自己下載的 CPython（python-build-standalone，內含 Tcl/Tk）。
       UV_PYTHON_PREFERENCE: only-managed
+      # 固定的自簽憑證：讓每次改版的 designated requirement 保持一致，
+      # 使用者授權過的「輔助使用」與 Keychain 才不會每次更新就失效。
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
 
@@ -60,6 +64,30 @@ jobs:
             Write-Error "打包產物缺少 _tkinter.pyd，設定視窗會開不起來"; exit 1
           }
           Write-Output "tkinter OK"
+
+      - name: 匯入簽章憑證（沒有 secret 就跳過，維持 PyInstaller 的 ad-hoc 簽章）
+        if: runner.os == 'macOS' && env.MACOS_CERT_P12 != ''
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/voxtype-signing.keychain-db"
+          KEYCHAIN_PW="$(openssl rand -base64 24)"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PW" "$KEYCHAIN"
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "SIGNING_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+      - name: 用固定憑證簽章
+        if: runner.os == 'macOS' && env.MACOS_CERT_P12 != ''
+        run: |
+          codesign --force --deep --sign "VoxType Self Signed" \
+            --keychain "$SIGNING_KEYCHAIN" dist/VoxType.app
+          codesign --verify --deep --strict dist/VoxType.app
+          echo "--- designated requirement（每版都必須一樣，權限才不會失效）---"
+          codesign -d -r- dist/VoxType.app 2>&1 | tail -1
 
       - name: 壓縮 .app（用 ditto 保留簽章與權限，不要用 zip）
         if: runner.os == 'macOS'
