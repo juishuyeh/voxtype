@@ -2,7 +2,45 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 from pynput import keyboard
+
+ACCESSIBILITY_PANE = (
+    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+)
+
+
+def is_trusted() -> bool:
+    """macOS：本行程有沒有「輔助使用」權限。沒有的話 pynput 只會靜靜地收不到任何按鍵。"""
+    if sys.platform != "darwin":
+        return True
+    try:
+        from ApplicationServices import AXIsProcessTrusted
+
+        return bool(AXIsProcessTrusted())
+    except Exception:
+        return True  # 查不出來就不要擋住流程
+
+
+def request_trust() -> None:
+    """跳出系統授權對話框，並開啟「隱私權與安全性 → 輔助使用」設定頁。"""
+    if sys.platform != "darwin":
+        return
+    try:
+        from ApplicationServices import (
+            AXIsProcessTrustedWithOptions,
+            kAXTrustedCheckOptionPrompt,
+        )
+
+        AXIsProcessTrustedWithOptions({kAXTrustedCheckOptionPrompt: True})
+    except Exception:
+        pass
+    try:
+        subprocess.Popen(["open", ACCESSIBILITY_PANE])
+    except Exception:
+        pass
 
 
 def validate(combo: str) -> None:

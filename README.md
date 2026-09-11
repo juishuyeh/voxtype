@@ -76,8 +76,12 @@ API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理
 
 **macOS**（權限是掛在「啟動它的那個程式」上，所以固定用同一個終端機 / 同一種啟動方式）
 
-- 系統設定 → 隱私權與安全性 → **麥克風**：允許你的終端機
-- 系統設定 → 隱私權與安全性 → **輔助使用**：允許你的終端機（全域快捷鍵與自動貼上都需要）
+- 系統設定 → 隱私權與安全性 → **麥克風**
+- 系統設定 → 隱私權與安全性 → **輔助使用**（全域快捷鍵與自動貼上都需要）
+
+權限是綁在「執行中的那個程式」上：用打包版就給 **VoxType.app**，用原始碼跑就給**你的終端機**。
+注意從終端機用指令啟動 `.app` 時它會繼承終端機的權限，所以那樣測「看起來正常」不代表
+使用者雙擊打開也正常——要驗請用 Finder 雙擊或 `open VoxType.app`。
 - 第一次跳通知權限時允許（通知走 osascript）
 
 **Windows**
@@ -150,7 +154,9 @@ macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）
 - **macOS**：右鍵 →「打開」→「打開」，或 `xattr -dr com.apple.quarantine /Applications/VoxType.app`
 - **Windows**：SmartScreen →「其他資訊」→「仍要執行」
 
-想要免掉這個步驟，就得走付費路線：
+ad-hoc 簽章還有一個持續性的代價：**每次發新版，「輔助使用」與 Keychain 授權都要重給一次**
+（macOS 依簽章辨識 app，簽章變了就是另一個 app）。用一張固定的簽章身分就能免掉，
+免費的自簽憑證也可以做到（憑證放 CI secret），付費的 Developer ID 則連 Gatekeeper 一起解決：
 
 - macOS：Apple Developer Program（US$99/年）→ `codesign --sign "Developer ID Application: ..."` → `xcrun notarytool submit`
 - Windows：買一張程式碼簽章憑證（OV 一年約 US$200 起，EV 才能立刻免除 SmartScreen）
@@ -184,6 +190,21 @@ src/voxtype/
 **打包版點「設定」沒反應** —— v0.1.0 的 macOS 版有這個 bug（CI 用到不含 tkinter 的 Homebrew Python，
 設定視窗一開就死在 `tk.Tk()`，而且 `console=False` 讓錯誤無處可見）。v0.1.1 已修：CI 改用 uv 自己的
 CPython、打包時直接 `import tkinter` 驗證、產物再檢查一次 `_tkinter` 是否存在，子行程失敗也會跳通知。
+
+**快捷鍵沒反應（macOS）** —— pynput 在沒有「輔助使用」權限時**不會報錯**，只是永遠收不到按鍵。
+v0.1.2 起 VoxType 啟動時會自己檢查，沒權限就跳通知並直接開啟設定頁，你勾選後它會自動恢復，
+不必重開程式；menu bar 選單也多了一項「輔助使用權限…」可隨時叫出來。
+
+**陷阱：清單裡的 VoxType 開關是開的，但權限其實是無效的** —— ad-hoc 簽章每次改版都會變，
+macOS 會把新版當成另一個 app，於是「輔助使用」清單裡那個亮著的開關對新版**完全不算數**。
+這也是 v0.1.1 快捷鍵失效的原因。解法：
+
+```bash
+tccutil reset Accessibility com.jsyeh.voxtype
+```
+
+然後重新開啟 VoxType，照提示授權一次。也可以在設定清單裡選 VoxType 按「−」移除再重新加入。
+想根治（每次更新都不用重來）就得用**固定的簽章身分**，見下方「簽章」。
 
 **第一次錄音時跳出鑰匙圈密碼對話框** —— 正常。因為 ad-hoc 簽章的 VoxType 和當初寫入金鑰的程式
 不是同一個身分，輸入登入密碼並按**「永遠允許」**一次即可。每次改版重新打包會再問一次。

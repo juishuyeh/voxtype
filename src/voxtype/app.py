@@ -6,6 +6,7 @@ import threading
 import time
 
 from . import api, config, notify, paste
+from . import hotkey as hotkey_mod
 from .hotkey import HotkeyListener
 from .recorder import Recorder, RecorderError
 
@@ -55,6 +56,30 @@ class VoxType:
         except Exception as exc:
             self._hotkey = None
             notify.notify(f"快捷鍵 {combo} 無法註冊：{exc}")
+            return
+        # macOS 沒有「輔助使用」權限時，pynput 不會報錯，只是永遠收不到按鍵，
+        # 表現就是「快捷鍵沒反應」。所以這裡主動檢查並告訴使用者。
+        if not hotkey_mod.is_trusted():
+            notify.notify(
+                f"快捷鍵 {combo} 需要「輔助使用」權限才會生效，"
+                "請在系統設定中勾選 VoxType"
+            )
+            hotkey_mod.request_trust()
+            self._watch_for_trust()
+
+    def _watch_for_trust(self) -> None:
+        """使用者在系統設定勾選之後自動把監聽器重開，不必叫他重啟程式。"""
+
+        def poll() -> None:
+            for _ in range(300):  # 最多等 10 分鐘
+                time.sleep(2)
+                if hotkey_mod.is_trusted():
+                    self.restart_hotkey()
+                    notify.notify("已取得輔助使用權限，快捷鍵可以用了")
+                    return
+
+        watcher = threading.Thread(target=poll, daemon=True)
+        watcher.start()
 
     def restart_hotkey(self) -> None:
         if self._hotkey is not None:

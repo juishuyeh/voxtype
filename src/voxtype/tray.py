@@ -9,7 +9,7 @@ import threading
 import pystray
 from PIL import Image, ImageDraw
 
-from . import notify
+from . import hotkey, notify
 from .app import ERROR, IDLE, PROCESSING, RECORDING, SUCCESS, VoxType
 
 COLORS = {
@@ -67,15 +67,22 @@ def open_settings(app: VoxType) -> None:
 
 def run() -> None:
     app = VoxType()
+
+    menu_items = [
+        pystray.MenuItem("開始 / 停止錄音", lambda: app.toggle()),
+        pystray.MenuItem("設定…", lambda: open_settings(app)),
+    ]
+    if sys.platform == "darwin":
+        menu_items.append(
+            pystray.MenuItem("輔助使用權限…", lambda: hotkey.request_trust())
+        )
+    menu_items.append(pystray.MenuItem("結束 VoxType", lambda: icon.stop()))
+
     icon = pystray.Icon(
         "voxtype",
         _IMAGES[IDLE],
         LABELS[IDLE],
-        menu=pystray.Menu(
-            pystray.MenuItem("開始 / 停止錄音", lambda: app.toggle()),
-            pystray.MenuItem("設定…", lambda: open_settings(app)),
-            pystray.MenuItem("結束 VoxType", lambda: icon.stop()),
-        ),
+        menu=pystray.Menu(*menu_items),
     )
 
     def on_state(state: str) -> None:
@@ -86,8 +93,7 @@ def run() -> None:
     notify.set_notifier(lambda message, title: icon.notify(message, title))
 
     app.start_hotkey()
-    hotkey = app.config.get("hotkey", "")
-    print(f"[voxtype] 已啟動，快捷鍵 {hotkey}")
+    print(f"[voxtype] 已啟動，快捷鍵 {app.config.get('hotkey', '')}")
     try:
         icon.run()
     finally:
