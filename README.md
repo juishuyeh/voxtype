@@ -1,4 +1,4 @@
-# VoxType
+# TapSay
 
 按一下快捷鍵、說話、再按一下 —— 幾秒後整理好的台灣繁體中文直接出現在游標位置。
 
@@ -14,11 +14,11 @@ Hotkey → 錄音 → STT → LLM 整理 → 剪貼簿 → 自動貼上
 
 | 平台 | 檔案 | 第一次打開 |
 |---|---|---|
-| macOS (Apple Silicon) | `VoxType-macOS-arm64.zip` | 解壓縮 → 拖進「應用程式」→ 右鍵「打開」 |
-| Windows (x64) | `VoxType-Windows-x64.zip` | 解壓縮 → 執行 `VoxType.exe` → SmartScreen 選「仍要執行」 |
+| macOS (Apple Silicon) | `TapSay-macOS-arm64.zip` | 解壓縮 → 拖進「應用程式」→ 右鍵「打開」 |
+| Windows (x64) | `TapSay-Windows-x64.zip` | 解壓縮 → 執行 `TapSay.exe` → SmartScreen 選「仍要執行」 |
 
 兩邊都沒有付費簽章，所以第一次要手動放行一次，之後正常。macOS 還要到
-「系統設定 → 隱私權與安全性」開**麥克風**與**輔助使用**給 VoxType。
+「系統設定 → 隱私權與安全性」開**麥克風**與**輔助使用**給 TapSay。
 
 ## 從原始碼執行
 
@@ -26,9 +26,9 @@ Hotkey → 錄音 → STT → LLM 整理 → 剪貼簿 → 自動貼上
 
 ```bash
 uv sync
-uv run voxtype            # 常駐執行，出現 menu bar / tray 圖示
-uv run voxtype --settings # 只開設定視窗
-uv run voxtype --no-tray  # 不顯示圖示，只註冊快捷鍵（除錯用）
+uv run tapsay            # 常駐執行，出現 menu bar / tray 圖示
+uv run tapsay --settings # 只開設定視窗
+uv run tapsay --no-tray  # 不顯示圖示，只註冊快捷鍵（除錯用）
 ```
 
 第一次執行請先開設定視窗填 STT / LLM 的 Endpoint、API Key、Model。
@@ -47,7 +47,7 @@ uv run voxtype --no-tray  # 不顯示圖示，只註冊快捷鍵（除錯用）
 
 ## 設定
 
-Menu bar 圖示 →「設定…」，或 `uv run voxtype --settings`。
+Menu bar 圖示 →「設定…」，或 `uv run tapsay --settings`。
 
 | 項目 | 說明 |
 |---|---|
@@ -73,10 +73,10 @@ Endpoint 填 base URL（例如 `https://api.openai.com/v1`），程式自己接 
 
 **設定檔位置**
 
-- macOS：`~/Library/Application Support/VoxType/config.toml`
-- Windows：`%APPDATA%\VoxType\config.toml`
+- macOS：`~/Library/Application Support/TapSay/config.toml`
+- Windows：`%APPDATA%\TapSay\config.toml`
 
-API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理員（service 名稱 `voxtype`）。
+API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理員（service 名稱 `tapsay`）。
 
 ## 系統權限
 
@@ -85,15 +85,15 @@ API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理
 - 系統設定 → 隱私權與安全性 → **麥克風**
 - 系統設定 → 隱私權與安全性 → **輔助使用**（全域快捷鍵與自動貼上都需要）
 
-權限是綁在「執行中的那個程式」上：用打包版就給 **VoxType.app**，用原始碼跑就給**你的終端機**。
+權限是綁在「執行中的那個程式」上：用打包版就給 **TapSay.app**，用原始碼跑就給**你的終端機**。
 注意從終端機用指令啟動 `.app` 時它會繼承終端機的權限，所以那樣測「看起來正常」不代表
-使用者雙擊打開也正常——要驗請用 Finder 雙擊或 `open VoxType.app`。
+使用者雙擊打開也正常——要驗請用 Finder 雙擊或 `open TapSay.app`。
 - 第一次跳通知權限時允許（通知走 osascript）
 
 **Windows**
 
 - 不需要特別權限；防毒軟體偶爾會對鍵盤 hook 有意見
-- 想避免黑色主控台視窗，用 `pythonw.exe -m voxtype` 啟動
+- 想避免黑色主控台視窗，用 `pythonw.exe -m tapsay` 啟動
 
 ## 技術選型
 
@@ -113,7 +113,7 @@ API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理
 
 **兩個關鍵設計決定**
 
-1. **設定視窗用獨立子行程開**（`python -m voxtype.ui`）。macOS 的 menu bar（NSApplication）和
+1. **設定視窗用獨立子行程開**（`python -m tapsay.ui`）。macOS 的 menu bar（NSApplication）和
    tkinter 都要求主執行緒，硬塞在同一個行程裡會打架；開子行程只花 0.3 秒，關掉後主程式重讀設定。
 2. **剪貼簿是保底**。永遠先寫剪貼簿再送 Cmd+V，自動貼上失敗只是少了一步，結果不會遺失。
 
@@ -130,13 +130,13 @@ API Key **不寫進 config.toml**，存在 macOS Keychain / Windows 認證管理
 
 ```bash
 uv sync
-uv run pyinstaller voxtype.spec --noconfirm
+uv run pyinstaller tapsay.spec --noconfirm
 ```
 
-- macOS → `dist/VoxType.app`（實測 48 MB，建置約 10 秒，menu bar 圖示正常）
-- Windows → `dist/VoxType/VoxType.exe`（`console=False`，不會有黑色主控台視窗）
+- macOS → `dist/TapSay.app`（實測 48 MB，建置約 10 秒，menu bar 圖示正常）
+- Windows → `dist/TapSay/TapSay.exe`（`console=False`，不會有黑色主控台視窗）
 
-`voxtype.spec` 裡兩個平台共用一份設定，重點只有三處：
+`tapsay.spec` 裡兩個平台共用一份設定，重點只有三處：
 
 - `LSUIElement: True` —— 只待在 menu bar，不佔 Dock
 - `NSMicrophoneUsageDescription` —— **沒有這行 macOS 會直接不給麥克風**
@@ -144,17 +144,21 @@ uv run pyinstaller voxtype.spec --noconfirm
 
 ### 自己在本機打包時要簽章
 
-憑證在 `~/.voxtype-signing/voxtype-signing.p12`，密碼存在 Keychain（service `voxtype-signing`）：
+憑證在 `~/.tapsay-signing/tapsay-signing.p12`，密碼存在 Keychain（service `tapsay-signing`）：
 
 ```bash
 KC=~/Library/Keychains/login.keychain-db
-security import ~/.voxtype-signing/voxtype-signing.p12 -k $KC \
-  -P "$(security find-generic-password -s voxtype-signing -a p12 -w)" -T /usr/bin/codesign   # 只需做一次
-codesign --force --deep --sign "VoxType Self Signed" dist/VoxType.app
-codesign -d -r- dist/VoxType.app        # 確認 certificate root 的雜湊沒變
+security import ~/.tapsay-signing/tapsay-signing.p12 -k $KC \
+  -P "$(security find-generic-password -s tapsay-signing -a p12 -w)" -T /usr/bin/codesign   # 只需做一次
+codesign --force --deep --sign "TapSay Self Signed" dist/TapSay.app
+codesign -d -r- dist/TapSay.app        # 確認 certificate root 的雜湊沒變
 ```
 
 不簽也能跑，只是會退回 ad-hoc，系統權限就會跟舊版一樣每次重來。
+
+> 之後若要重新產生憑證，`openssl pkcs12 -export` **一定要加 `-legacy`**。OpenSSL 3 預設用
+> PBES2/AES-256，macOS 的 `security import` 讀不了，只會回一句誤導人的
+> `MAC verification failed (wrong password?)`。
 
 ## 發佈到 GitHub Release
 
@@ -171,14 +175,14 @@ macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）
 
 | Secret | 內容 |
 |---|---|
-| `MACOS_CERT_P12` | `base64 -i voxtype-signing.p12` 的輸出 |
+| `MACOS_CERT_P12` | `base64 -i tapsay-signing.p12` 的輸出 |
 | `MACOS_CERT_PASSWORD` | p12 的密碼 |
 
 ## 給下載的人：第一次打開
 
 兩邊都是**沒有付費簽章**的程式，系統會擋一次：
 
-- **macOS**：右鍵 →「打開」→「打開」，或 `xattr -dr com.apple.quarantine /Applications/VoxType.app`
+- **macOS**：右鍵 →「打開」→「打開」，或 `xattr -dr com.apple.quarantine /Applications/TapSay.app`
 - **Windows**：SmartScreen →「其他資訊」→「仍要執行」
 
 **v0.1.4 起改用固定的自簽憑證簽章**，所以「輔助使用」與 Keychain 授權**只要給一次，之後更新都不會失效**
@@ -194,18 +198,18 @@ macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）
    因此 designated requirement 每版都相同，授權給過一次就一直有效：
 
    ```
-   designated => identifier "io.github.voxtype" and certificate root = H"9889d670…"
+   designated => identifier "io.github.tapsay" and certificate root = H"15d5c2ad…"
    ```
 
    PyInstaller 預設的 ad-hoc 簽章則是綁 cdhash，每次打包都不一樣，那才是 v0.1.3 以前
    每次更新都要重新授權的原因。
-2. 打包後 `sys.executable` 就是 VoxType 自己，不是 python，所以設定視窗改用
-   `VoxType --settings` 開子行程（`tray.py:46`）；跑原始碼時仍走 `python -m voxtype.ui`。
+2. 打包後 `sys.executable` 就是 TapSay 自己，不是 python，所以設定視窗改用
+   `TapSay --settings` 開子行程（`tray.py:46`）；跑原始碼時仍走 `python -m tapsay.ui`。
 
 ## 專案結構
 
 ```
-src/voxtype/
+src/tapsay/
 ├── __init__.py   進入點與命令列參數
 ├── app.py        狀態機與主流程
 ├── recorder.py   麥克風 → WAV bytes
@@ -225,32 +229,32 @@ src/voxtype/
 CPython、打包時直接 `import tkinter` 驗證、產物再檢查一次 `_tkinter` 是否存在，子行程失敗也會跳通知。
 
 **權限給了卻還是不生效？先確認 app 沒有被「搬移執行」（App Translocation）** ——
-從瀏覽器下載的 zip 帶有隔離屬性，如果直接在「下載項目」裡雙擊解壓後的 VoxType.app，
+從瀏覽器下載的 zip 帶有隔離屬性，如果直接在「下載項目」裡雙擊解壓後的 TapSay.app，
 macOS 會把它複製到 `/private/var/folders/…/AppTranslocation/…` 這種隨機唯讀路徑執行，
-授權就綁不住。所以**一定要先把 VoxType.app 拖進「應用程式」資料夾再打開**，或先解除隔離：
+授權就綁不住。所以**一定要先把 TapSay.app 拖進「應用程式」資料夾再打開**，或先解除隔離：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/VoxType.app
+xattr -dr com.apple.quarantine /Applications/TapSay.app
 ```
 
-確認方法：`pgrep -fl VoxType`，路徑若出現 `AppTranslocation` 就是中了。
+確認方法：`pgrep -fl TapSay`，路徑若出現 `AppTranslocation` 就是中了。
 
 **快捷鍵沒反應（macOS）** —— pynput 在沒有「輔助使用」權限時**不會報錯**，只是永遠收不到按鍵。
-v0.1.2 起 VoxType 啟動時會自己檢查，沒權限就跳通知並直接開啟設定頁，你勾選後它會自動恢復，
+v0.1.2 起 TapSay 啟動時會自己檢查，沒權限就跳通知並直接開啟設定頁，你勾選後它會自動恢復，
 不必重開程式；menu bar 選單也多了一項「輔助使用權限…」可隨時叫出來。
 
-**陷阱：清單裡的 VoxType 開關是開的，但權限其實是無效的** —— 這是 v0.1.3 以前的老問題
+**陷阱：清單裡的 TapSay 開關是開的，但權限其實是無效的** —— 這是 v0.1.3 以前的老問題
 （ad-hoc 簽章每次改版都變，macOS 把新版當成另一個 app，於是那個亮著的開關對新版完全不算數）。
 **v0.1.4 起改用固定憑證已經根治**，但從舊版升上來的這一次仍需要重給一次：
 
 ```bash
-tccutil reset Accessibility io.github.voxtype
+tccutil reset Accessibility io.github.tapsay
 ```
 
-然後重新開啟 VoxType，照提示授權一次。也可以在設定清單裡選 VoxType 按「−」移除再重新加入。
+然後重新開啟 TapSay，照提示授權一次。也可以在設定清單裡選 TapSay 按「−」移除再重新加入。
 想根治（每次更新都不用重來）就得用**固定的簽章身分**，見下方「簽章」。
 
-**第一次錄音時跳出鑰匙圈密碼對話框** —— 正常。因為 ad-hoc 簽章的 VoxType 和當初寫入金鑰的程式
+**第一次錄音時跳出鑰匙圈密碼對話框** —— 正常。因為 ad-hoc 簽章的 TapSay 和當初寫入金鑰的程式
 不是同一個身分，輸入登入密碼並按**「永遠允許」**一次即可。每次改版重新打包會再問一次。
 
 ## 已知限制

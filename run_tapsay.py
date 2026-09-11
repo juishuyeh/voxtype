@@ -1,5 +1,5 @@
 """PyInstaller 進入點。"""
 
-from voxtype import main
+from tapsay import main
 
 main()

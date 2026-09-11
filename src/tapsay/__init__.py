@@ -1,4 +1,4 @@
-"""VoxType — 按一下、說話、再按一下，整理好的文字出現在游標位置。"""
+"""TapSay — 按一下、說話、再按一下，整理好的文字出現在游標位置。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ def main() -> None:
     args = sys.argv[1:]
     if args and args[0] in ("-h", "--help"):
         print(
-            "用法：voxtype [--settings | --no-tray]\n"
+            "用法：tapsay [--settings | --no-tray]\n"
             "  （無參數）  常駐執行，顯示 tray / menu bar 圖示\n"
             "  --settings  只開啟設定視窗\n"
             "  --no-tray   不顯示圖示，只註冊快捷鍵（除錯用）"
@@ -21,11 +21,11 @@ def main() -> None:
         run_settings()
         return
     if args and args[0] == "--no-tray":
-        from .app import VoxType
+        from .app import TapSay
 
-        app = VoxType()
+        app = TapSay()
         app.start_hotkey()
-        print(f"[voxtype] 已啟動（無 tray），快捷鍵 {app.config.get('hotkey')}，Ctrl+C 結束")
+        print(f"[tapsay] 已啟動（無 tray），快捷鍵 {app.config.get('hotkey')}，Ctrl+C 結束")
         try:
             import threading
 

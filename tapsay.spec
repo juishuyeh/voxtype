@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller 打包設定：macOS 產生 VoxType.app，Windows 產生 VoxType.exe。
+"""PyInstaller 打包設定：macOS 產生 TapSay.app，Windows 產生 TapSay.exe。
 
-    uv run pyinstaller voxtype.spec --noconfirm
+    uv run pyinstaller tapsay.spec --noconfirm
 """
 
 import sys
@@ -22,7 +22,7 @@ else:
     hiddenimports += ["pystray._win32", "keyring.backends.Windows"]
 
 a = Analysis(
-    ["run_voxtype.py"],
+    ["run_tapsay.py"],
     pathex=["src"],
     hiddenimports=hiddenimports,
     excludes=["numpy", "matplotlib", "pandas", "pytest", "PyInstaller"],
@@ -35,7 +35,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="VoxType",
+    name="TapSay",
     console=False,          # 不要黑色主控台視窗
     debug=False,
     strip=False,
@@ -48,19 +48,19 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name="VoxType",
+    name="TapSay",
 )
 
 if MACOS:
     app = BUNDLE(
         coll,
-        name="VoxType.app",
-        bundle_identifier="io.github.voxtype",
+        name="TapSay.app",
+        bundle_identifier="io.github.tapsay",
         info_plist={
             "LSUIElement": True,  # 只待在 menu bar，不要 Dock 圖示
-            "NSMicrophoneUsageDescription": "VoxType 需要麥克風才能把你說的話轉成文字。",
-            "NSAppleEventsUsageDescription": "VoxType 用系統通知顯示狀態。",
-            "CFBundleShortVersionString": "0.1.5",
+            "NSMicrophoneUsageDescription": "TapSay 需要麥克風才能把你說的話轉成文字。",
+            "NSAppleEventsUsageDescription": "TapSay 用系統通知顯示狀態。",
+            "CFBundleShortVersionString": "0.2.0",
             "NSHighResolutionCapable": True,
         },
     )

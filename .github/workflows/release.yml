@@ -12,9 +12,9 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            name: VoxType-macOS-arm64
+            name: TapSay-macOS-arm64
           - os: windows-latest
-            name: VoxType-Windows-x64
+            name: TapSay-Windows-x64
     runs-on: ${{ matrix.os }}
     env:
       # runner 上的 Homebrew python@3.14 不含 tkinter，會打出「點設定沒反應」的包，
@@ -47,12 +47,12 @@ jobs:
         run: uv run python -c "import sys, tkinter; print(sys.executable); print('Tk', tkinter.TkVersion)"
 
       - name: 打包
-        run: uv run pyinstaller voxtype.spec --noconfirm
+        run: uv run pyinstaller tapsay.spec --noconfirm
 
       - name: 驗證產物真的含 tkinter（macOS）
         if: runner.os == 'macOS'
         run: |
-          find dist/VoxType.app -name "_tkinter*" | grep -q . \
+          find dist/TapSay.app -name "_tkinter*" | grep -q . \
             && echo "tkinter OK" \
             || { echo "::error::打包產物缺少 _tkinter，設定視窗會開不起來"; exit 1; }
 
@@ -60,7 +60,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          if (-not (Test-Path dist/VoxType/_internal/_tkinter.pyd)) {
+          if (-not (Test-Path dist/TapSay/_internal/_tkinter.pyd)) {
             Write-Error "打包產物缺少 _tkinter.pyd，設定視窗會開不起來"; exit 1
           }
           Write-Output "tkinter OK"
@@ -68,7 +68,7 @@ jobs:
       - name: 匯入簽章憑證（沒有 secret 就跳過，維持 PyInstaller 的 ad-hoc 簽章）
         if: runner.os == 'macOS' && env.MACOS_CERT_P12 != ''
         run: |
-          KEYCHAIN="$RUNNER_TEMP/voxtype-signing.keychain-db"
+          KEYCHAIN="$RUNNER_TEMP/tapsay-signing.keychain-db"
           KEYCHAIN_PW="$(openssl rand -base64 24)"
           echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
           security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
@@ -83,20 +83,20 @@ jobs:
       - name: 用固定憑證簽章
         if: runner.os == 'macOS' && env.MACOS_CERT_P12 != ''
         run: |
-          codesign --force --deep --sign "VoxType Self Signed" \
-            --keychain "$SIGNING_KEYCHAIN" dist/VoxType.app
-          codesign --verify --deep --strict dist/VoxType.app
+          codesign --force --deep --sign "TapSay Self Signed" \
+            --keychain "$SIGNING_KEYCHAIN" dist/TapSay.app
+          codesign --verify --deep --strict dist/TapSay.app
           echo "--- designated requirement（每版都必須一樣，權限才不會失效）---"
-          codesign -d -r- dist/VoxType.app 2>&1 | tail -1
+          codesign -d -r- dist/TapSay.app 2>&1 | tail -1
 
       - name: 壓縮 .app（用 ditto 保留簽章與權限，不要用 zip）
         if: runner.os == 'macOS'
-        run: ditto -c -k --sequesterRsrc --keepParent dist/VoxType.app ${{ matrix.name }}.zip
+        run: ditto -c -k --sequesterRsrc --keepParent dist/TapSay.app ${{ matrix.name }}.zip
 
       - name: 壓縮 .exe
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist/VoxType -DestinationPath ${{ matrix.name }}.zip
+        run: Compress-Archive -Path dist/TapSay -DestinationPath ${{ matrix.name }}.zip
 
       - uses: actions/upload-artifact@v7
         with:
@@ -121,5 +121,5 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" artifacts/*.zip \
             --repo "$GITHUB_REPOSITORY" \
-            --title "VoxType $GITHUB_REF_NAME" \
+            --title "TapSay $GITHUB_REF_NAME" \
             --generate-notes

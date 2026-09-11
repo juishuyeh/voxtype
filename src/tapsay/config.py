@@ -10,8 +10,8 @@ from pathlib import Path
 import keyring
 import tomli_w
 
-APP_NAME = "VoxType"
-KEYRING_SERVICE = "voxtype"
+APP_NAME = "TapSay"
+KEYRING_SERVICE = "tapsay"
 
 DEFAULT_PROMPT = """請整理以下語音辨識文字。
 修正明顯的語音辨識錯誤、錯字、標點符號與不必要的口語贅詞，但不要改變原意。
@@ -37,14 +37,14 @@ DEFAULTS: dict = {
 
 
 def config_dir() -> Path:
-    override = os.environ.get("VOXTYPE_CONFIG_DIR")
+    override = os.environ.get("TAPSAY_CONFIG_DIR")
     if override:
         return Path(override)
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / APP_NAME
     if os.name == "nt":
         return Path(os.environ.get("APPDATA") or Path.home()) / APP_NAME
-    return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "voxtype"
+    return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "tapsay"
 
 
 def config_path() -> Path:
@@ -61,7 +61,7 @@ def load() -> dict:
     except FileNotFoundError:
         return cfg
     except (tomllib.TOMLDecodeError, OSError) as exc:
-        print(f"[voxtype] 設定檔讀取失敗，改用預設值: {exc}", file=sys.stderr)
+        print(f"[tapsay] 設定檔讀取失敗，改用預設值: {exc}", file=sys.stderr)
         return cfg
     for key, value in data.items():
         if isinstance(value, dict) and isinstance(cfg.get(key), dict):
@@ -83,7 +83,7 @@ def get_api_key(kind: str) -> str:
     try:
         return keyring.get_password(KEYRING_SERVICE, kind) or ""
     except Exception as exc:  # 沒有可用的 keyring backend
-        print(f"[voxtype] 讀取 API key 失敗: {exc}", file=sys.stderr)
+        print(f"[tapsay] 讀取 API key 失敗: {exc}", file=sys.stderr)
         return ""
 
 

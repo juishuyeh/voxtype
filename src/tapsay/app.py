@@ -16,7 +16,7 @@ SUCCESS = "success"
 ERROR = "error"
 
 
-class VoxType:
+class TapSay:
     def __init__(self) -> None:
         self.config = config.load()
         self.recorder = Recorder()
@@ -63,7 +63,7 @@ class VoxType:
         if not hotkey_mod.is_trusted():
             notify.notify(
                 f"快捷鍵 {combo} 需要「輔助使用」權限才會生效，"
-                "請在系統設定中勾選 VoxType"
+                "請在系統設定中勾選 TapSay"
             )
             hotkey_mod.request_trust()
             self._watch_for_trust()
@@ -148,7 +148,7 @@ class VoxType:
                 self._flash_back_to_idle(ERROR, 3.0)
                 return
 
-        print(f"[voxtype] 完成，耗時 {time.monotonic() - started:.1f}s、{len(text)} 字")
+        print(f"[tapsay] 完成，耗時 {time.monotonic() - started:.1f}s、{len(text)} 字")
         self._set_state(SUCCESS)
         self._flash_back_to_idle(SUCCESS, 1.2)
 

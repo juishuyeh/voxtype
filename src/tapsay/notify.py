@@ -13,7 +13,7 @@ def set_notifier(func) -> None:
     _notifier = func
 
 
-def notify(message: str, title: str = "VoxType") -> None:
+def notify(message: str, title: str = "TapSay") -> None:
     if _notifier is not None:
         try:
             _notifier(message, title)

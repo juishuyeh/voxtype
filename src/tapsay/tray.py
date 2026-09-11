@@ -10,7 +10,7 @@ import pystray
 from PIL import Image, ImageDraw
 
 from . import hotkey, notify
-from .app import ERROR, IDLE, PROCESSING, RECORDING, SUCCESS, VoxType
+from .app import ERROR, IDLE, PROCESSING, RECORDING, SUCCESS, TapSay
 
 COLORS = {
     IDLE: (130, 130, 130),
@@ -20,11 +20,11 @@ COLORS = {
     ERROR: (225, 60, 60),
 }
 LABELS = {
-    IDLE: "VoxType — 待命",
-    RECORDING: "VoxType — ● 錄音中",
-    PROCESSING: "VoxType — 處理中…",
-    SUCCESS: "VoxType — 完成",
-    ERROR: "VoxType — 錯誤",
+    IDLE: "TapSay — 待命",
+    RECORDING: "TapSay — ● 錄音中",
+    PROCESSING: "TapSay — 處理中…",
+    SUCCESS: "TapSay — 完成",
+    ERROR: "TapSay — 錯誤",
 }
 
 
@@ -39,14 +39,14 @@ def _icon_image(color: tuple[int, int, int]) -> Image.Image:
 _IMAGES = {state: _icon_image(color) for state, color in COLORS.items()}
 
 
-def open_settings(app: VoxType) -> None:
+def open_settings(app: TapSay) -> None:
     """設定視窗用獨立行程開，避免 tkinter 與 menu bar 搶主執行緒。"""
 
     # 打包成 .app / .exe 之後 sys.executable 就是程式本身，不能用 -m
     if getattr(sys, "frozen", False):
         cmd = [sys.executable, "--settings"]
     else:
-        cmd = [sys.executable, "-m", "voxtype.ui"]
+        cmd = [sys.executable, "-m", "tapsay.ui"]
 
     def run() -> None:
         try:
@@ -66,7 +66,7 @@ def open_settings(app: VoxType) -> None:
 
 
 def run() -> None:
-    app = VoxType()
+    app = TapSay()
 
     menu_items = [
         pystray.MenuItem("開始 / 停止錄音", lambda: app.toggle()),
@@ -76,10 +76,10 @@ def run() -> None:
         menu_items.append(
             pystray.MenuItem("輔助使用權限…", lambda: hotkey.request_trust())
         )
-    menu_items.append(pystray.MenuItem("結束 VoxType", lambda: icon.stop()))
+    menu_items.append(pystray.MenuItem("結束 TapSay", lambda: icon.stop()))
 
     icon = pystray.Icon(
-        "voxtype",
+        "tapsay",
         _IMAGES[IDLE],
         LABELS[IDLE],
         menu=pystray.Menu(*menu_items),
@@ -93,7 +93,7 @@ def run() -> None:
     notify.set_notifier(lambda message, title: icon.notify(message, title))
 
     app.start_hotkey()
-    print(f"[voxtype] 已啟動，快捷鍵 {app.config.get('hotkey', '')}")
+    print(f"[tapsay] 已啟動，快捷鍵 {app.config.get('hotkey', '')}")
     try:
         icon.run()
     finally:

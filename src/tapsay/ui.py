@@ -1,4 +1,4 @@
-"""設定視窗（tkinter）。獨立行程執行：python -m voxtype.ui"""
+"""設定視窗（tkinter）。獨立行程執行：python -m tapsay.ui"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class SettingsWindow:
     def __init__(self) -> None:
         self.cfg = config.load()
         self.root = tk.Tk()
-        self.root.title("VoxType 設定")
+        self.root.title("TapSay 設定")
         self.root.minsize(560, 640)
 
         self.vars = {
