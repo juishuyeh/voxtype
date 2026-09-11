@@ -224,6 +224,17 @@ src/voxtype/
 設定視窗一開就死在 `tk.Tk()`，而且 `console=False` 讓錯誤無處可見）。v0.1.1 已修：CI 改用 uv 自己的
 CPython、打包時直接 `import tkinter` 驗證、產物再檢查一次 `_tkinter` 是否存在，子行程失敗也會跳通知。
 
+**權限給了卻還是不生效？先確認 app 沒有被「搬移執行」（App Translocation）** ——
+從瀏覽器下載的 zip 帶有隔離屬性，如果直接在「下載項目」裡雙擊解壓後的 VoxType.app，
+macOS 會把它複製到 `/private/var/folders/…/AppTranslocation/…` 這種隨機唯讀路徑執行，
+授權就綁不住。所以**一定要先把 VoxType.app 拖進「應用程式」資料夾再打開**，或先解除隔離：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/VoxType.app
+```
+
+確認方法：`pgrep -fl VoxType`，路徑若出現 `AppTranslocation` 就是中了。
+
 **快捷鍵沒反應（macOS）** —— pynput 在沒有「輔助使用」權限時**不會報錯**，只是永遠收不到按鍵。
 v0.1.2 起 VoxType 啟動時會自己檢查，沒權限就跳通知並直接開啟設定頁，你勾選後它會自動恢復，
 不必重開程式；menu bar 選單也多了一項「輔助使用權限…」可隨時叫出來。
