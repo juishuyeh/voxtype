@@ -10,7 +10,7 @@ Hotkey → 錄音 → STT → LLM 整理 → 剪貼簿 → 自動貼上
 
 ## 下載
 
-[**Releases**](https://github.com/juishuyeh/voxtype/releases/latest) 有打包好的版本，不需要裝 Python：
+[**Releases**](../../releases/latest) 有打包好的版本，不需要裝 Python：
 
 | 平台 | 檔案 | 第一次打開 |
 |---|---|---|
@@ -194,7 +194,7 @@ macOS 的 zip 用 `ditto` 壓（`zip` 會破壞 .app 的簽章與符號連結）
    因此 designated requirement 每版都相同，授權給過一次就一直有效：
 
    ```
-   designated => identifier "com.jsyeh.voxtype" and certificate root = H"9889d670…"
+   designated => identifier "io.github.voxtype" and certificate root = H"9889d670…"
    ```
 
    PyInstaller 預設的 ad-hoc 簽章則是綁 cdhash，每次打包都不一樣，那才是 v0.1.3 以前
@@ -244,7 +244,7 @@ v0.1.2 起 VoxType 啟動時會自己檢查，沒權限就跳通知並直接開�
 **v0.1.4 起改用固定憑證已經根治**，但從舊版升上來的這一次仍需要重給一次：
 
 ```bash
-tccutil reset Accessibility com.jsyeh.voxtype
+tccutil reset Accessibility io.github.voxtype
 ```
 
 然後重新開啟 VoxType，照提示授權一次。也可以在設定清單裡選 VoxType 按「−」移除再重新加入。

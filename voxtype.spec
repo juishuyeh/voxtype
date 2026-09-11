@@ -55,12 +55,12 @@ if MACOS:
     app = BUNDLE(
         coll,
         name="VoxType.app",
-        bundle_identifier="com.jsyeh.voxtype",
+        bundle_identifier="io.github.voxtype",
         info_plist={
             "LSUIElement": True,  # 只待在 menu bar，不要 Dock 圖示
             "NSMicrophoneUsageDescription": "VoxType 需要麥克風才能把你說的話轉成文字。",
             "NSAppleEventsUsageDescription": "VoxType 用系統通知顯示狀態。",
-            "CFBundleShortVersionString": "0.1.4",
+            "CFBundleShortVersionString": "0.1.5",
             "NSHighResolutionCapable": True,
         },
     )
