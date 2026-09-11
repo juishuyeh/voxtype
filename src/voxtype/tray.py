@@ -50,9 +50,15 @@ def open_settings(app: VoxType) -> None:
 
     def run() -> None:
         try:
-            subprocess.run(cmd, check=False)
+            proc = subprocess.run(cmd, capture_output=True, text=True)
         except Exception as exc:
             notify.notify(f"無法開啟設定視窗：{exc}")
+            return
+        if proc.returncode != 0:
+            # 打包版沒有主控台，子行程的錯誤只能靠通知講出來，否則使用者只會看到「沒反應」
+            lines = (proc.stderr or "").strip().splitlines()
+            reason = lines[-1][:120] if lines else f"exit {proc.returncode}"
+            notify.notify(f"設定視窗開啟失敗：{reason}")
             return
         app.reload_config()
 

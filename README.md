@@ -56,6 +56,9 @@ Menu bar 圖示 →「設定…」，或 `uv run voxtype --settings`。
 | LLM Endpoint / Key / Model | OpenAI 相容的 `/chat/completions` |
 | LLM Prompt | 可自由編輯，預設是「整理成台灣繁體中文」 |
 
+API Key 欄位開啟時一律是空的，**留白代表沿用已儲存的金鑰**，只有真的輸入新值才會覆寫。
+（設定視窗因此完全不讀 Keychain，才不會一點「設定」就先跳出要求鑰匙圈密碼的對話框。）
+
 「測試連線 / 取得模型」會打 `GET {endpoint}/models`：成功就把模型填進下拉選單，
 Endpoint 不支援模型清單時，Model 欄位照樣可以直接手動輸入。
 
@@ -175,6 +178,15 @@ src/voxtype/
 ├── ui.py         設定視窗（tkinter）
 └── config.py     config.toml + keyring
 ```
+
+## 疑難排解
+
+**打包版點「設定」沒反應** —— v0.1.0 的 macOS 版有這個 bug（CI 用到不含 tkinter 的 Homebrew Python，
+設定視窗一開就死在 `tk.Tk()`，而且 `console=False` 讓錯誤無處可見）。v0.1.1 已修：CI 改用 uv 自己的
+CPython、打包時直接 `import tkinter` 驗證、產物再檢查一次 `_tkinter` 是否存在，子行程失敗也會跳通知。
+
+**第一次錄音時跳出鑰匙圈密碼對話框** —— 正常。因為 ad-hoc 簽章的 VoxType 和當初寫入金鑰的程式
+不是同一個身分，輸入登入密碼並按**「永遠允許」**一次即可。每次改版重新打包會再問一次。
 
 ## 已知限制
 

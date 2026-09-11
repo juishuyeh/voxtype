@@ -23,10 +23,10 @@ class SettingsWindow:
             "hotkey": tk.StringVar(value=self.cfg.get("hotkey", "")),
             "auto_paste": tk.BooleanVar(value=bool(self.cfg.get("auto_paste", True))),
             "stt_endpoint": tk.StringVar(value=self.cfg["stt"].get("endpoint", "")),
-            "stt_key": tk.StringVar(value=config.get_api_key("stt")),
+            "stt_key": tk.StringVar(),
             "stt_model": tk.StringVar(value=self.cfg["stt"].get("model", "")),
             "llm_endpoint": tk.StringVar(value=self.cfg["llm"].get("endpoint", "")),
-            "llm_key": tk.StringVar(value=config.get_api_key("llm")),
+            "llm_key": tk.StringVar(),
             "llm_model": tk.StringVar(value=self.cfg["llm"].get("model", "")),
         }
         self.status = tk.StringVar(value=f"設定檔：{config.config_path()}")
@@ -88,7 +88,10 @@ class SettingsWindow:
         )
         ttk.Label(frame, text="API Key").grid(row=1, column=0, sticky="w", **PAD)
         ttk.Entry(frame, textvariable=self.vars[f"{kind}_key"], show="•").grid(
-            row=1, column=1, columnspan=2, sticky="ew", **PAD
+            row=1, column=1, sticky="ew", **PAD
+        )
+        ttk.Label(frame, text="留白＝沿用已儲存的金鑰", foreground="#777").grid(
+            row=1, column=2, sticky="w", **PAD
         )
         ttk.Label(frame, text="Model").grid(row=2, column=0, sticky="w", **PAD)
         combo = ttk.Combobox(frame, textvariable=self.vars[f"{kind}_model"])
@@ -105,7 +108,7 @@ class SettingsWindow:
 
     def _fetch_models(self, kind: str, combo: ttk.Combobox) -> None:
         endpoint = self.vars[f"{kind}_endpoint"].get()
-        key = self.vars[f"{kind}_key"].get()
+        key = self.vars[f"{kind}_key"].get() or config.get_api_key(kind)
         self.status.set(f"連線中：{endpoint} …")
 
         def work() -> None:
@@ -141,8 +144,10 @@ class SettingsWindow:
 
         try:
             config.save(self.cfg)
-            config.set_api_key("stt", self.vars["stt_key"].get().strip())
-            config.set_api_key("llm", self.vars["llm_key"].get().strip())
+            for kind in ("stt", "llm"):
+                new_key = self.vars[f"{kind}_key"].get().strip()
+                if new_key:  # 留白代表不動已儲存的金鑰
+                    config.set_api_key(kind, new_key)
         except Exception as exc:
             messagebox.showerror("儲存失敗", str(exc))
             return

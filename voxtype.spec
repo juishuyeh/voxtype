@@ -6,6 +6,10 @@
 
 import sys
 
+# 少了 tkinter 就會打出一個「點設定沒反應」的包（Homebrew 的 python@3.14 不含 tkinter），
+# 所以在這裡先炸，讓建置失敗而不是讓使用者踩到。
+import tkinter  # noqa: F401
+
 MACOS = sys.platform == "darwin"
 
 hiddenimports = [
@@ -56,7 +60,7 @@ if MACOS:
             "LSUIElement": True,  # 只待在 menu bar，不要 Dock 圖示
             "NSMicrophoneUsageDescription": "VoxType 需要麥克風才能把你說的話轉成文字。",
             "NSAppleEventsUsageDescription": "VoxType 用系統通知顯示狀態。",
-            "CFBundleShortVersionString": "0.1.0",
+            "CFBundleShortVersionString": "0.1.1",
             "NSHighResolutionCapable": True,
         },
     )
