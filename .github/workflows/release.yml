@@ -17,7 +17,7 @@ jobs:
             name: VoxType-Windows-x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安裝 uv (macOS)
         if: runner.os == 'macOS'
@@ -47,7 +47,7 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path dist/VoxType -DestinationPath ${{ matrix.name }}.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}.zip
@@ -59,7 +59,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: artifacts
           merge-multiple: true
