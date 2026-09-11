@@ -43,10 +43,19 @@ class SettingsWindow:
         general.grid(row=0, column=0, sticky="ew", **PAD)
         general.columnconfigure(1, weight=1)
         ttk.Label(general, text="全域快捷鍵").grid(row=0, column=0, sticky="w", **PAD)
-        ttk.Entry(general, textvariable=self.vars["hotkey"]).grid(row=0, column=1, sticky="ew", **PAD)
+        ttk.Combobox(
+            general,
+            textvariable=self.vars["hotkey"],
+            values=[
+                "<ctrl>+<alt>+<space>",
+                "<cmd>+<shift>+<space>",
+                "double:<ctrl>",
+                "double:<cmd>",
+            ],
+        ).grid(row=0, column=1, sticky="ew", **PAD)
         ttk.Label(
             general,
-            text="格式：<ctrl>+<alt>+<space>、<cmd>+<shift>+r …",
+            text="組合鍵：<ctrl>+<alt>+<space>　／　連擊兩下：double:<ctrl>（可用 ctrl cmd alt shift）",
             foreground="#777",
         ).grid(row=1, column=1, sticky="w", padx=8)
         ttk.Checkbutton(

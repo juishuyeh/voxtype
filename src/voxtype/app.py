@@ -7,7 +7,6 @@ import time
 
 from . import api, config, notify, paste
 from . import hotkey as hotkey_mod
-from .hotkey import HotkeyListener
 from .recorder import Recorder, RecorderError
 
 IDLE = "idle"
@@ -51,7 +50,9 @@ class VoxType:
     def start_hotkey(self) -> None:
         combo = self.config.get("hotkey", "")
         try:
-            self._hotkey = HotkeyListener(combo, self.toggle)
+            self._hotkey = hotkey_mod.create_listener(
+                combo, self.toggle, int(self.config.get("double_tap_ms", 400))
+            )
             self._hotkey.start()
         except Exception as exc:
             self._hotkey = None

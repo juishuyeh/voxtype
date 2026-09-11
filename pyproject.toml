@@ -1,6 +1,6 @@
 [project]
 name = "voxtype"
-version = "0.1.2"
+version = "0.1.3"
 description = "輕量語音輸入工具：快捷鍵錄音 → STT → LLM 整理 → 貼到游標位置"
 readme = "README.md"
 authors = [

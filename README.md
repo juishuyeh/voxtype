@@ -51,10 +51,16 @@ Menu bar 圖示 →「設定…」，或 `uv run voxtype --settings`。
 
 | 項目 | 說明 |
 |---|---|
-| 全域快捷鍵 | pynput 格式，例如 `<ctrl>+<alt>+<space>`、`<cmd>+<shift>+r` |
+| 全域快捷鍵 | 組合鍵 `<ctrl>+<alt>+<space>`，或**連擊兩下** `double:<ctrl>` |
 | STT Endpoint / Key / Model | OpenAI 相容的 `/audio/transcriptions` |
 | LLM Endpoint / Key / Model | OpenAI 相容的 `/chat/completions` |
 | LLM Prompt | 可自由編輯，預設是「整理成台灣繁體中文」 |
+
+**連擊快捷鍵**：`double:<ctrl>` 代表快速連按兩下 Ctrl（也可用 `cmd` / `alt` / `shift`）。
+判定刻意保守，避免誤觸——兩次按下之間夾了別的鍵（像 Ctrl+C）不算，程式自己送出的按鍵
+（例如自動貼上的 Ctrl+V）也不算，兩下之間最長 400 毫秒（要調就改 `config.toml` 的 `double_tap_ms`）。
+連擊的好處是不會和任何既有快捷鍵衝突；代價是修飾鍵本身的原本功能不受影響，但如果你習慣
+用單按 Ctrl 做輸入法切換之類的事，建議改用 `double:<alt>`。
 
 API Key 欄位開啟時一律是空的，**留白代表沿用已儲存的金鑰**，只有真的輸入新值才會覆寫。
 （設定視窗因此完全不讀 Keychain，才不會一點「設定」就先跳出要求鑰匙圈密碼的對話框。）

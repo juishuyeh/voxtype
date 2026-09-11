@@ -23,6 +23,7 @@ DEFAULT_PROMPT = """請整理以下語音辨識文字。
 DEFAULTS: dict = {
     "hotkey": "<ctrl>+<alt>+<space>",
     "auto_paste": True,
+    "double_tap_ms": 400,  # 連擊快捷鍵（double:<ctrl>）兩下之間的最長間隔
     "stt": {
         "endpoint": "https://api.openai.com/v1",
         "model": "whisper-1",
