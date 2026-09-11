@@ -8,7 +8,19 @@ Hotkey → 錄音 → STT → LLM 整理 → 剪貼簿 → 自動貼上
 
 常駐背景，只有一個 menu bar / tray 圖示，沒有主視窗。
 
-## 安裝與執行
+## 下載
+
+[**Releases**](https://github.com/juishuyeh/voxtype/releases/latest) 有打包好的版本，不需要裝 Python：
+
+| 平台 | 檔案 | 第一次打開 |
+|---|---|---|
+| macOS (Apple Silicon) | `VoxType-macOS-arm64.zip` | 解壓縮 → 拖進「應用程式」→ 右鍵「打開」 |
+| Windows (x64) | `VoxType-Windows-x64.zip` | 解壓縮 → 執行 `VoxType.exe` → SmartScreen 選「仍要執行」 |
+
+兩邊都沒有付費簽章，所以第一次要手動放行一次，之後正常。macOS 還要到
+「系統設定 → 隱私權與安全性」開**麥克風**與**輔助使用**給 VoxType。
+
+## 從原始碼執行
 
 需要 Python 3.14（`uv` 會自動處理）。
 
