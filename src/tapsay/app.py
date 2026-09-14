@@ -19,6 +19,7 @@ ERROR = "error"
 class TapSay:
     def __init__(self) -> None:
         self.config = config.load()
+        api.set_ca_bundle(self.config.get("ca_bundle", ""))
         api.set_insecure_ssl(self.config.get("insecure_ssl", False))
         self.recorder = Recorder()
         self.state = IDLE
@@ -92,6 +93,7 @@ class TapSay:
     def reload_config(self) -> None:
         old = self.config.get("hotkey")
         self.config = config.load()
+        api.set_ca_bundle(self.config.get("ca_bundle", ""))
         api.set_insecure_ssl(self.config.get("insecure_ssl", False))
         if self.config.get("hotkey") != old:
             self.restart_hotkey()

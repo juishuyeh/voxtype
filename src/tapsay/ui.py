@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
 from . import api, config, hotkey
 
@@ -22,6 +22,7 @@ class SettingsWindow:
         self.vars = {
             "hotkey": tk.StringVar(value=self.cfg.get("hotkey", "")),
             "auto_paste": tk.BooleanVar(value=bool(self.cfg.get("auto_paste", True))),
+            "ca_bundle": tk.StringVar(value=self.cfg.get("ca_bundle", "")),
             "insecure_ssl": tk.BooleanVar(value=bool(self.cfg.get("insecure_ssl", False))),
             "stt_endpoint": tk.StringVar(value=self.cfg["stt"].get("endpoint", "")),
             "stt_key": tk.StringVar(),
@@ -62,16 +63,30 @@ class SettingsWindow:
         ttk.Checkbutton(
             general, text="自動貼到游標位置（關閉則只複製到剪貼簿）", variable=self.vars["auto_paste"]
         ).grid(row=2, column=1, sticky="w", **PAD)
-        ttk.Checkbutton(
-            general,
-            text="關閉 TLS 憑證驗證（受限網路才勾）",
-            variable=self.vars["insecure_ssl"],
-        ).grid(row=3, column=1, sticky="w", **PAD)
+        ttk.Label(general, text="公司 CA 憑證").grid(row=3, column=0, sticky="w", **PAD)
+        ca_row = ttk.Frame(general)
+        ca_row.grid(row=3, column=1, sticky="ew", **PAD)
+        ca_row.columnconfigure(0, weight=1)
+        ttk.Entry(ca_row, textvariable=self.vars["ca_bundle"]).grid(row=0, column=0, sticky="ew")
+        ttk.Button(ca_row, text="瀏覽…", command=self._pick_ca).grid(row=0, column=1, padx=(4, 0))
+        ttk.Button(ca_row, text="清除", command=lambda: self.vars["ca_bundle"].set("")).grid(
+            row=0, column=2, padx=(4, 0)
+        )
         ttk.Label(
             general,
-            text="公司 MITM proxy 或自簽憑證的內部 endpoint 才需要；勾了連線就可能被竊聽",
-            foreground="#a00",
+            text="受限網路（公司 MITM proxy / 自簽憑證）才需要；系統原有的信任清單仍然有效",
+            foreground="#777",
         ).grid(row=4, column=1, sticky="w", padx=8)
+        ttk.Checkbutton(
+            general,
+            text="關閉 TLS 憑證驗證（最後手段）",
+            variable=self.vars["insecure_ssl"],
+        ).grid(row=5, column=1, sticky="w", **PAD)
+        ttk.Label(
+            general,
+            text="完全不檢查憑證，連線可被中間人竊聽；能用上面的 CA 憑證就不要勾這個",
+            foreground="#a00",
+        ).grid(row=6, column=1, sticky="w", padx=8)
 
         self._api_frame(root, 1, "STT（語音轉文字）", "stt")
         self._api_frame(root, 2, "LLM（文字整理）", "llm")
@@ -122,6 +137,15 @@ class SettingsWindow:
 
     # ---- 行為 ----
 
+    def _pick_ca(self) -> None:
+        path = filedialog.askopenfilename(
+            parent=self.root,
+            title="選擇 CA 憑證（PEM）",
+            filetypes=[("憑證", "*.pem *.crt *.cer *.ca-bundle"), ("所有檔案", "*.*")],
+        )
+        if path:
+            self.vars["ca_bundle"].set(path)
+
     def _reset_prompt(self) -> None:
         self.prompt.delete("1.0", "end")
         self.prompt.insert("1.0", config.DEFAULT_PROMPT)
@@ -129,7 +153,9 @@ class SettingsWindow:
     def _fetch_models(self, kind: str, combo: ttk.Combobox) -> None:
         endpoint = self.vars[f"{kind}_endpoint"].get()
         key = self.vars[f"{kind}_key"].get() or config.get_api_key(kind)
-        api.set_insecure_ssl(self.vars["insecure_ssl"].get())  # 測試連線用當下勾選狀態，不必先存檔
+        # 測試連線用當下的 TLS 設定，不必先存檔
+        api.set_ca_bundle(self.vars["ca_bundle"].get())
+        api.set_insecure_ssl(self.vars["insecure_ssl"].get())
         self.status.set(f"連線中：{endpoint} …")
 
         def work() -> None:
@@ -155,8 +181,16 @@ class SettingsWindow:
             messagebox.showerror("快捷鍵格式錯誤", "例如：<ctrl>+<alt>+<space>")
             return
 
+        ca = self.vars["ca_bundle"].get().strip()
+        try:
+            api.check_ca_bundle(ca)
+        except api.ApiError as exc:
+            messagebox.showerror("CA 憑證無法使用", str(exc))
+            return
+
         self.cfg["hotkey"] = combo_hotkey
         self.cfg["auto_paste"] = bool(self.vars["auto_paste"].get())
+        self.cfg["ca_bundle"] = ca
         self.cfg["insecure_ssl"] = bool(self.vars["insecure_ssl"].get())
         self.cfg["stt"]["endpoint"] = self.vars["stt_endpoint"].get().strip()
         self.cfg["stt"]["model"] = self.vars["stt_model"].get().strip()

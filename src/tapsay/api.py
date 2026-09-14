@@ -15,13 +15,21 @@ LLM_TIMEOUT = 120
 MODELS_TIMEOUT = 15
 
 _insecure_ssl = False
+_ca_bundle = ""
 _warned_insecure = False
+_context_cache: dict[tuple[bool, str], ssl.SSLContext | None] = {}
 
 
 def set_insecure_ssl(value: bool) -> None:
     """關閉 TLS 憑證驗證。受限網路（公司 MITM proxy、自簽憑證的內部 endpoint）才用。"""
     global _insecure_ssl
     _insecure_ssl = bool(value)
+
+
+def set_ca_bundle(path: str) -> None:
+    """額外信任一份 CA 憑證（PEM）。系統原有的信任清單仍然有效，是「加上去」不是「取代」。"""
+    global _ca_bundle
+    _ca_bundle = (path or "").strip()
 
 
 def insecure_ssl() -> bool:
@@ -31,18 +39,45 @@ def insecure_ssl() -> bool:
     return _insecure_ssl
 
 
+def ca_bundle() -> str:
+    """環境變數 TAPSAY_CA_BUNDLE 優先於設定檔。"""
+    return os.environ.get("TAPSAY_CA_BUNDLE", "").strip() or _ca_bundle
+
+
 def _ssl_context() -> ssl.SSLContext | None:
-    """回傳 None＝用 urllib 預設（正常驗證）。"""
-    if not insecure_ssl():
+    """回傳 None＝用 urllib 預設（只信任系統 CA）。"""
+    key = (insecure_ssl(), ca_bundle())
+    if key not in _context_cache:
+        _context_cache[key] = _build_context(*key)
+    return _context_cache[key]
+
+
+def _build_context(insecure: bool, cafile: str) -> ssl.SSLContext | None:
+    if insecure:
+        global _warned_insecure
+        if not _warned_insecure:
+            _warned_insecure = True
+            print("[tapsay] 警告：已關閉 TLS 憑證驗證，連線可被中間人竊聽", file=sys.stderr)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+    if not cafile:
         return None
-    global _warned_insecure
-    if not _warned_insecure:
-        _warned_insecure = True
-        print("[tapsay] 警告：已關閉 TLS 憑證驗證，連線可被中間人竊聽", file=sys.stderr)
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl.create_default_context()  # 先載系統預設信任清單
+    try:
+        ctx.load_verify_locations(cafile=cafile)  # 再把公司 CA 加上去
+    except (OSError, ssl.SSLError) as exc:
+        raise ApiError(f"CA 憑證讀取失敗（{cafile}）：{exc}") from exc
     return ctx
+
+
+def check_ca_bundle(path: str) -> None:
+    """設定視窗存檔前先驗一次，錯的路徑或格式當場報錯，不要等到錄完音才失敗。"""
+    path = (path or "").strip()
+    if not path:
+        return
+    _build_context(False, path)
 
 
 class ApiError(RuntimeError):
@@ -75,7 +110,7 @@ def _request(url: str, api_key: str, data: bytes | None, content_type: str | Non
         if isinstance(exc.reason, ssl.SSLCertVerificationError):
             raise ApiError(
                 f"憑證驗證失敗：{exc.reason.verify_message or exc.reason}"
-                "（受限網路可在設定勾選「關閉 TLS 憑證驗證」）"
+                "（受限網路請在設定填「公司 CA 憑證」，或勾「關閉 TLS 憑證驗證」）"
             ) from exc
         raise ApiError(f"連線失敗：{exc.reason}") from exc
     except TimeoutError as exc:
