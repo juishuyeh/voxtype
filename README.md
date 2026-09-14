@@ -55,6 +55,7 @@ Menu bar 圖示 →「設定…」，或 `uv run tapsay --settings`。
 | STT Endpoint / Key / Model | OpenAI 相容的 `/audio/transcriptions` |
 | LLM Endpoint / Key / Model | OpenAI 相容的 `/chat/completions` |
 | LLM Prompt | 可自由編輯，預設是「整理成台灣繁體中文」 |
+| 關閉 TLS 憑證驗證 | 受限網路才勾，見下方「受限網路」 |
 
 **連擊快捷鍵**：`double:<ctrl>` 代表快速連按兩下 Ctrl（也可用 `cmd` / `alt` / `shift`）。
 判定刻意保守，避免誤觸——兩次按下之間夾了別的鍵（像 Ctrl+C）不算，程式自己送出的按鍵
@@ -67,6 +68,27 @@ API Key 欄位開啟時一律是空的，**留白代表沿用已儲存的金鑰*
 
 「測試連線 / 取得模型」會打 `GET {endpoint}/models`：成功就把模型填進下拉選單，
 Endpoint 不支援模型清單時，Model 欄位照樣可以直接手動輸入。
+
+### 受限網路（憑證驗證失敗）
+
+公司的 MITM proxy、或內部 endpoint 用自簽憑證時，連線會失敗並顯示
+「憑證驗證失敗：self-signed certificate …」。兩種解法，**優先用第一種**：
+
+1. **裝公司 CA（安全）**：把 CA 憑證存成 PEM，執行前設 `SSL_CERT_FILE`，
+   驗證照常進行，只是多信任這張 CA。
+
+   ```bash
+   SSL_CERT_FILE=/path/to/corp-ca.pem uv run tapsay
+   ```
+
+2. **關掉驗證（不安全）**：設定視窗勾「關閉 TLS 憑證驗證」，或不改設定檔跑一次：
+
+   ```bash
+   TAPSAY_INSECURE_SSL=1 uv run tapsay
+   ```
+
+   等於接受任何憑證，連線內容（含語音、API Key）可被中間人看到。只在你信任該網路時用。
+   對應 `config.toml` 的 `insecure_ssl = true`；環境變數優先於設定檔。
 
 Endpoint 填 base URL（例如 `https://api.openai.com/v1`），程式自己接 `/audio/transcriptions`、
 `/chat/completions`、`/models`；填完整網址也可以。本機 LiteLLM proxy 就填 `http://localhost:4000/v1`。

@@ -24,6 +24,7 @@ DEFAULTS: dict = {
     "hotkey": "<ctrl>+<alt>+<space>",
     "auto_paste": True,
     "double_tap_ms": 400,  # 連擊快捷鍵（double:<ctrl>）兩下之間的最長間隔
+    "insecure_ssl": False,  # 受限網路（MITM proxy / 自簽憑證）才開，等於不驗證 TLS 憑證
     "stt": {
         "endpoint": "https://api.openai.com/v1",
         "model": "whisper-1",

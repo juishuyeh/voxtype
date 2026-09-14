@@ -22,6 +22,7 @@ class SettingsWindow:
         self.vars = {
             "hotkey": tk.StringVar(value=self.cfg.get("hotkey", "")),
             "auto_paste": tk.BooleanVar(value=bool(self.cfg.get("auto_paste", True))),
+            "insecure_ssl": tk.BooleanVar(value=bool(self.cfg.get("insecure_ssl", False))),
             "stt_endpoint": tk.StringVar(value=self.cfg["stt"].get("endpoint", "")),
             "stt_key": tk.StringVar(),
             "stt_model": tk.StringVar(value=self.cfg["stt"].get("model", "")),
@@ -61,6 +62,16 @@ class SettingsWindow:
         ttk.Checkbutton(
             general, text="自動貼到游標位置（關閉則只複製到剪貼簿）", variable=self.vars["auto_paste"]
         ).grid(row=2, column=1, sticky="w", **PAD)
+        ttk.Checkbutton(
+            general,
+            text="關閉 TLS 憑證驗證（受限網路才勾）",
+            variable=self.vars["insecure_ssl"],
+        ).grid(row=3, column=1, sticky="w", **PAD)
+        ttk.Label(
+            general,
+            text="公司 MITM proxy 或自簽憑證的內部 endpoint 才需要；勾了連線就可能被竊聽",
+            foreground="#a00",
+        ).grid(row=4, column=1, sticky="w", padx=8)
 
         self._api_frame(root, 1, "STT（語音轉文字）", "stt")
         self._api_frame(root, 2, "LLM（文字整理）", "llm")
@@ -118,6 +129,7 @@ class SettingsWindow:
     def _fetch_models(self, kind: str, combo: ttk.Combobox) -> None:
         endpoint = self.vars[f"{kind}_endpoint"].get()
         key = self.vars[f"{kind}_key"].get() or config.get_api_key(kind)
+        api.set_insecure_ssl(self.vars["insecure_ssl"].get())  # 測試連線用當下勾選狀態，不必先存檔
         self.status.set(f"連線中：{endpoint} …")
 
         def work() -> None:
@@ -145,6 +157,7 @@ class SettingsWindow:
 
         self.cfg["hotkey"] = combo_hotkey
         self.cfg["auto_paste"] = bool(self.vars["auto_paste"].get())
+        self.cfg["insecure_ssl"] = bool(self.vars["insecure_ssl"].get())
         self.cfg["stt"]["endpoint"] = self.vars["stt_endpoint"].get().strip()
         self.cfg["stt"]["model"] = self.vars["stt_model"].get().strip()
         self.cfg["llm"]["endpoint"] = self.vars["llm_endpoint"].get().strip()

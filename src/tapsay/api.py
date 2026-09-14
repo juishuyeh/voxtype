@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import ssl
+import sys
 import urllib.error
 import urllib.request
 import uuid
@@ -10,6 +13,36 @@ import uuid
 STT_TIMEOUT = 120
 LLM_TIMEOUT = 120
 MODELS_TIMEOUT = 15
+
+_insecure_ssl = False
+_warned_insecure = False
+
+
+def set_insecure_ssl(value: bool) -> None:
+    """關閉 TLS 憑證驗證。受限網路（公司 MITM proxy、自簽憑證的內部 endpoint）才用。"""
+    global _insecure_ssl
+    _insecure_ssl = bool(value)
+
+
+def insecure_ssl() -> bool:
+    """環境變數 TAPSAY_INSECURE_SSL=1 可在不改設定檔的情況下強制關閉驗證。"""
+    if os.environ.get("TAPSAY_INSECURE_SSL", "").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    return _insecure_ssl
+
+
+def _ssl_context() -> ssl.SSLContext | None:
+    """回傳 None＝用 urllib 預設（正常驗證）。"""
+    if not insecure_ssl():
+        return None
+    global _warned_insecure
+    if not _warned_insecure:
+        _warned_insecure = True
+        print("[tapsay] 警告：已關閉 TLS 憑證驗證，連線可被中間人竊聽", file=sys.stderr)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 class ApiError(RuntimeError):
@@ -33,12 +66,17 @@ def _request(url: str, api_key: str, data: bytes | None, content_type: str | Non
         headers["Content-Type"] = content_type
     req = urllib.request.Request(url, data=data, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
             body = resp.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read()[:400].decode("utf-8", "replace").strip()
         raise ApiError(f"HTTP {exc.code}: {detail or exc.reason}") from exc
     except urllib.error.URLError as exc:
+        if isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise ApiError(
+                f"憑證驗證失敗：{exc.reason.verify_message or exc.reason}"
+                "（受限網路可在設定勾選「關閉 TLS 憑證驗證」）"
+            ) from exc
         raise ApiError(f"連線失敗：{exc.reason}") from exc
     except TimeoutError as exc:
         raise ApiError("連線逾時") from exc
